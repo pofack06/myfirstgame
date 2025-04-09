@@ -23,7 +23,7 @@
 
 
   ```bash
-  git clone https://github.com/ваш-ник/platformer-game.git
+  git clone https://github.com/pofack06/myfirstgame.git
   cd platformer-game
   ```
 <h5><li>Запустите игру:</li></h5>
