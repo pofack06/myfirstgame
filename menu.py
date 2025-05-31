@@ -1,98 +1,113 @@
 import pygame
-import sys
-import subprocess
 import random
-from settings import WIDTH, HEIGHT, WHITE, BLACK, GRAY, LIGHT_BLUE, DARK_BLUE
-from fonts import title_font, button_font
+import os
 
-# Инициализация Pygame
-pygame.init()
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Приключение Лунного Кота")
-
-title_line1 = title_font.render("Приключение", True, WHITE)
-title_line2 = title_font.render("Лунного Кота", True, WHITE)
-
-title_rect1 = title_line1.get_rect(center=(WIDTH//2, HEIGHT//4 - 40))
-title_rect2 = title_line2.get_rect(center=(WIDTH//2, HEIGHT//4 + 40))
-
-# Кнопки
-class Button:
-    def __init__(self, x, y, width, height, text, color, hover_color):
-        self.rect = pygame.Rect(x, y, width, height)
-        self.text = text
-        self.color = color
-        self.hover_color = hover_color
-        self.is_hovered = False
-        self.text_surf = button_font.render(text, True, BLACK)
-        self.text_rect = self.text_surf.get_rect(center=self.rect.center)
-    
-    def draw(self, surface):
-        color = self.hover_color if self.is_hovered else self.color
-        pygame.draw.rect(surface, color, self.rect, border_radius=10)
-        pygame.draw.rect(surface, BLACK, self.rect, 2, border_radius=10)
-        surface.blit(self.text_surf, self.text_rect)
-    
-    def check_hover(self, pos):
-        self.is_hovered = self.rect.collidepoint(pos)
-        return self.is_hovered
-    
-    def is_clicked(self, pos, event):
-        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-            return self.rect.collidepoint(pos)
-        return False
-
-# Создание кнопок
-play_button = Button(WIDTH//2 - 150, HEIGHT//2, 300, 50, "Играть", LIGHT_BLUE, WHITE)
-exit_button = Button(WIDTH//2 - 150, HEIGHT//2 + 100, 300, 50, "Выход", LIGHT_BLUE, WHITE)
-
-# Фоновое изображение
-background = pygame.Surface((WIDTH, HEIGHT))
-background.fill(DARK_BLUE)
-
-# Добавляем звезды для "лунного" эффекта
-for _ in range(100):
-    x, y = random.randint(0, WIDTH), random.randint(0, HEIGHT)
-    size = random.randint(1, 3)
-    pygame.draw.circle(background, WHITE, (x, y), size)
-
-# Главный цикл меню
-def main_menu():
-    running = True
-    while running:
-        mouse_pos = pygame.mouse.get_pos()
+class Menu:
+    def __init__(self):
+        pygame.init()
+        self.WIDTH, self.HEIGHT = 800, 600
+        self.screen = pygame.display.set_mode((self.WIDTH, self.HEIGHT))
+        pygame.display.set_caption("Приключение Лунного Кота")
         
-        # Обработка событий
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-                pygame.quit()
-                sys.exit()
+        # Цвета
+        self.WHITE = (255, 255, 255)
+        self.BLACK = (0, 0, 0)
+        self.LIGHT_BLUE = (173, 216, 230)
+        self.DARK_BLUE = (30, 30, 70)
+        
+        # Загрузка шрифтов
+        try:
+            font_path = os.path.join('images', 'mario_font.ttf')
+            self.title_font = pygame.font.Font(font_path, 64)
+            self.button_font = pygame.font.Font(font_path, 36)
+        except:
+            self.title_font = pygame.font.SysFont('arial', 64)
+            self.button_font = pygame.font.SysFont('arial', 36)
+        
+        # Загрузка музыки для меню
+        self.load_menu_music()
+        
+        # Создание элементов меню
+        self.create_menu_elements()
+    
+    def load_menu_music(self):
+        """Загружает и настраивает фоновую музыку для меню"""
+        try:
+            pygame.mixer.music.load(os.path.join('music', 'menu_music.mp3'))  # Убедитесь, что файл существует
+            pygame.mixer.music.set_volume(1)
+            pygame.mixer.music.play(-1)  # Бесконечное воспроизведение
+        except Exception as e:
+            print(f"Не удалось загрузить музыку меню: {e}")
+    
+    def create_menu_elements(self):
+        """Создает все элементы интерфейса меню"""
+        # Текст меню
+        self.title_line1 = self.title_font.render("Приключение", True, self.WHITE)
+        self.title_line2 = self.title_font.render("Лунного Кота", True, self.WHITE)
+        self.title_rect1 = self.title_line1.get_rect(center=(self.WIDTH//2, self.HEIGHT//4 - 40))
+        self.title_rect2 = self.title_line2.get_rect(center=(self.WIDTH//2, self.HEIGHT//4 + 40))
+        
+        # Создание кнопок
+        self.play_button = self.create_button(self.WIDTH//2 - 150, self.HEIGHT//2, 300, 50, "Играть")
+        self.exit_button = self.create_button(self.WIDTH//2 - 150, self.HEIGHT//2 + 100, 300, 50, "Выход")
+        
+        # Фон с звездами
+        self.background = pygame.Surface((self.WIDTH, self.HEIGHT))
+        self.background.fill(self.DARK_BLUE)
+        for _ in range(100):
+            x, y = random.randint(0, self.WIDTH), random.randint(0, self.HEIGHT)
+            size = random.randint(1, 3)
+            pygame.draw.circle(self.background, self.WHITE, (x, y), size)
+    
+    def create_button(self, x, y, width, height, text):
+        """Создает кнопку меню"""
+        button = {
+            'rect': pygame.Rect(x, y, width, height),
+            'text': text,
+            'hovered': False
+        }
+        return button
+    
+    def draw_button(self, button):
+        """Отрисовывает кнопку меню"""
+        color = self.WHITE if button['hovered'] else self.LIGHT_BLUE
+        pygame.draw.rect(self.screen, color, button['rect'], border_radius=10)
+        pygame.draw.rect(self.screen, self.BLACK, button['rect'], 2, border_radius=10)
+        
+        text_surf = self.button_font.render(button['text'], True, self.BLACK)
+        text_rect = text_surf.get_rect(center=button['rect'].center)
+        self.screen.blit(text_surf, text_rect)
+    
+    def run(self):
+        """Запускает главный цикл меню"""
+        running = True
+        while running:
+            mouse_pos = pygame.mouse.get_pos()
             
-            if play_button.is_clicked(mouse_pos, event):
-                running = False
-                # Запуск основной игры
-                subprocess.Popen(["python", "game.py"]) 
-                pygame.quit()
-                return
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.mixer.music.stop()
+                    return 'exit'
+                
+                if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                    if self.play_button['rect'].collidepoint(mouse_pos):
+                        pygame.mixer.music.fadeout(500)  # Плавное затухание музыки
+                        return 'play'
+                    elif self.exit_button['rect'].collidepoint(mouse_pos):
+                        pygame.mixer.music.stop()
+                        return 'exit'
             
-            if exit_button.is_clicked(mouse_pos, event):
-                running = False
-                pygame.quit()
-                sys.exit()
+            # Проверка наведения на кнопки
+            self.play_button['hovered'] = self.play_button['rect'].collidepoint(mouse_pos)
+            self.exit_button['hovered'] = self.exit_button['rect'].collidepoint(mouse_pos)
+            
+            # Отрисовка
+            self.screen.blit(self.background, (0, 0))
+            self.screen.blit(self.title_line1, self.title_rect1)
+            self.screen.blit(self.title_line2, self.title_rect2)
+            self.draw_button(self.play_button)
+            self.draw_button(self.exit_button)
+            
+            pygame.display.flip()
         
-        # Проверка наведения на кнопки
-        play_button.check_hover(mouse_pos)
-        exit_button.check_hover(mouse_pos)
-        
-        # Отрисовка
-        screen.blit(background, (0, 0))
-        screen.blit(title_line1, title_rect1)
-        screen.blit(title_line2, title_rect2)
-        play_button.draw(screen)
-        exit_button.draw(screen)
-        
-        pygame.display.flip()
-
-if __name__ == "__main__":
-    main_menu()
+        return 'exit'
