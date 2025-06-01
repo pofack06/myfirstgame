@@ -51,7 +51,3 @@ pip install -r requirements.txt
 ```
 
 <div align="center"> <br> <p><b>⭐ Если вам понравился проект, поставьте звезду на GitHub!</b></p> <p>🐞 Нашли баг? Создайте issue в разделе "Проблемы"</p> <p>💡 Есть идеи для улучшения? Форкните проект и создайте pull request!</p>
-<img src="https://user-images.githubusercontent.com/74038190/212741999-016fddbd-617a-4448-8042-0ecf907aea25.gif" 
-       width="500"
-       style="border: 2px solid #ddd; border-radius: 8px;">
-
