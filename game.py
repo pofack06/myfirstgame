@@ -15,17 +15,16 @@ def load_images():
         images['ground'] = pygame.image.load(os.path.join(IMAGE_DIR, 'ground.png'))
         images['ground'] = pygame.transform.scale(images['ground'], (1000, 110))
 
+        # Удалены enemy_flipped и enemy_dead_flipped
         images['enemy'] = pygame.image.load(os.path.join(IMAGE_DIR, 'goomba.png'))
         images['enemy'] = pygame.transform.scale(images['enemy'], (80, 80))
-        images['enemy_flipped'] = pygame.transform.flip(images['enemy'], True, False)
-
+        
         images['enemy_dead'] = pygame.image.load(os.path.join(IMAGE_DIR, 'goomba_dead.png'))
         images['enemy_dead'] = pygame.transform.scale(images['enemy_dead'], (80, 80))
-        images['enemy_dead_flipped'] = pygame.transform.flip(images['enemy_dead'], True, False)
 
+        # Удален player_flipped
         images['player'] = pygame.image.load(os.path.join(IMAGE_DIR, 'cat.png'))
         images['player'] = pygame.transform.scale(images['player'], (80, 80))
-        images['player_flipped'] = pygame.transform.flip(images['player'], True, False)
     except Exception as e:
         print(f"Ошибка загрузки изображений: {e}")
         pygame.quit()
@@ -112,7 +111,7 @@ def run_game():
 
     # Инициализация игры
     high_score = load_high_score()
-    player = Player(images['player'], images['player_flipped'])
+    player = Player(images['player'])
     score = 0
     paused = False
     goombas = []
@@ -147,7 +146,7 @@ def run_game():
                         save_high_score(high_score)
                     
                     # Перезапускаем игру
-                    player = Player(images['player'], images['player_flipped'])
+                    player = Player(images['player'])
                     score = 0
                     kill_count = 0
                     goombas = []
@@ -193,15 +192,13 @@ def run_game():
         
         if elapsed > current_spawn_delay:
             last_spawn_time = now
-            goombas.append(Goomba(images['enemy'], images['enemy_flipped'], 
-                              images['enemy_dead'], images['enemy_dead_flipped']))
+            goombas.append(Goomba(images['enemy'], images['enemy_dead']))
             
             # В быстром режиме спавним дополнительных гумб с меньшей вероятностью
             if fast_spawn_active and random.random() > 0.8: 
                 extra_enemies = random.randint(0, max_wave_enemies)  # От 0 до max_wave_enemies
                 for _ in range(extra_enemies):
-                    goombas.append(Goomba(images['enemy'], images['enemy_flipped'], 
-                                      images['enemy_dead'], images['enemy_dead_flipped']))
+                    goombas.append(Goomba(images['enemy'], images['enemy_dead']))
 
         # Отрисовка
         screen.blit(images['background'], (0, 0))
@@ -223,14 +220,12 @@ def run_game():
         
         if elapsed > current_spawn_delay:
             last_spawn_time = now
-            goombas.append(Goomba(images['enemy'], images['enemy_flipped'], 
-                              images['enemy_dead'], images['enemy_dead_flipped']))
+            goombas.append(Goomba(images['enemy'], images['enemy_dead']))
             
             # В быстром режиме спавним дополнительных гумб
             if fast_spawn_active and random.random() > 0.5:
                 for _ in range(random.randint(1, 2)):
-                    goombas.append(Goomba(images['enemy'], images['enemy_flipped'], 
-                                  images['enemy_dead'], images['enemy_dead_flipped']))
+                    goombas.append(Goomba(images['enemy'], images['enemy_dead']))
 
         if player.is_out:
             score_rect.midbottom = (W//2, H//2)

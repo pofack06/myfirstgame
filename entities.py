@@ -3,9 +3,8 @@ import random
 from constants import W, H, GROUND_H
 
 class Entity:
-    def __init__(self, image, flipped_image=None):
+    def __init__(self, image):
         self.image = image
-        self.flipped_image = flipped_image if flipped_image else image
         self.current_image = image
         self.rect = self.image.get_rect()
         self.x_speed = 0
@@ -21,11 +20,8 @@ class Entity:
     def handle_input(self):
         pass
 
-    def kill(self, dead_image, flipped_dead_image=None):
-        if flipped_dead_image:
-            self.current_image = flipped_dead_image if not self.facing_right else dead_image
-        else:
-            self.current_image = dead_image
+    def kill(self, dead_image):
+        self.current_image = dead_image
         self.image = dead_image
         self.is_dead = True
         self.x_speed = -self.x_speed
@@ -39,7 +35,7 @@ class Entity:
 
         if self.x_speed > 0:
             self.facing_right = True
-            self.current_image = self.flipped_image
+            self.current_image = pygame.transform.flip(self.image, True, False)
         elif self.x_speed < 0:
             self.facing_right = False
             self.current_image = self.image
@@ -59,8 +55,8 @@ class Entity:
         surface.blit(self.current_image, self.rect)
 
 class Player(Entity):
-    def __init__(self, image, flipped_image):
-        super().__init__(image, flipped_image)
+    def __init__(self, image):
+        super().__init__(image)
         self.can_jump = True
         self.moon_jump_ready = True
         self.moon_jump_active = False
@@ -113,10 +109,9 @@ class Player(Entity):
                 self.moon_jump_ready = True
 
 class Goomba(Entity):
-    def __init__(self, image, flipped_image, dead_image, flipped_dead_image):
-        super().__init__(image, flipped_image)
+    def __init__(self, image, dead_image):
+        super().__init__(image)
         self.dead_image = dead_image
-        self.flipped_dead_image = flipped_dead_image
         self.spawn()
 
     def spawn(self):
@@ -125,7 +120,7 @@ class Goomba(Entity):
             self.x_speed = self.speed
             self.rect.bottomright = (0, 0)
             self.facing_right = True
-            self.current_image = self.flipped_image
+            self.current_image = pygame.transform.flip(self.image, True, False)
         else:
             self.x_speed = -self.speed
             self.rect.bottomleft = (W, 0)
@@ -133,7 +128,7 @@ class Goomba(Entity):
             self.current_image = self.image
     
     def kill(self):
-        return super().kill(self.dead_image, self.flipped_dead_image)
+        return super().kill(self.dead_image)
     
     def update(self):
         super().update()

@@ -5,23 +5,24 @@ from constants import W, H, IMAGE_DIR, MUSIC_DIR, GROUND_H
 def load_images():
     images = {}
     
+    # Загрузка фона
     background_image = pygame.image.load(os.path.join(IMAGE_DIR, 'background.jpg'))
     images['background'] = pygame.transform.scale(background_image, (W, H))
     
+    # Загрузка земли
     ground_image = pygame.image.load(os.path.join(IMAGE_DIR, 'ground.png'))
     images['ground'] = pygame.transform.scale(ground_image, (1000, GROUND_H))
     
+    # Загрузка врага (только оригинальные изображения)
     enemy_image = pygame.image.load(os.path.join(IMAGE_DIR, 'goomba.png'))
     images['enemy'] = pygame.transform.scale(enemy_image, (80, 80))
-    images['enemy_flipped'] = pygame.transform.flip(images['enemy'], True, False)
     
     enemy_dead_image = pygame.image.load(os.path.join(IMAGE_DIR, 'goomba_dead.png'))
     images['enemy_dead'] = pygame.transform.scale(enemy_dead_image, (80, 80))
-    images['enemy_dead_flipped'] = pygame.transform.flip(images['enemy_dead'], True, False)
     
+    # Загрузка игрока (только оригинальное изображение)
     player_image = pygame.image.load(os.path.join(IMAGE_DIR, 'cat.png'))
     images['player'] = pygame.transform.scale(player_image, (80, 80))
-    images['player_flipped'] = pygame.transform.flip(images['player'], True, False)
     
     return images
 
