@@ -3,7 +3,7 @@ import os
 import random
 from constants import W, H, FPS, INIT_DELAY, DECREASE_BASE, GROUND_H
 from utils import load_high_score, save_high_score
-from entities import Player, Goomba
+from entities import Player, Goomba, HeartBonus, Meteor  # Добавляем Meteor в импорт
 
 def load_images():
     images = {}
@@ -15,16 +15,24 @@ def load_images():
         images['ground'] = pygame.image.load(os.path.join(IMAGE_DIR, 'ground.png'))
         images['ground'] = pygame.transform.scale(images['ground'], (1000, 110))
 
-        # Удалены enemy_flipped и enemy_dead_flipped
         images['enemy'] = pygame.image.load(os.path.join(IMAGE_DIR, 'goomba.png'))
         images['enemy'] = pygame.transform.scale(images['enemy'], (80, 80))
         
         images['enemy_dead'] = pygame.image.load(os.path.join(IMAGE_DIR, 'goomba_dead.png'))
         images['enemy_dead'] = pygame.transform.scale(images['enemy_dead'], (80, 80))
 
-        # Удален player_flipped
         images['player'] = pygame.image.load(os.path.join(IMAGE_DIR, 'cat.png'))
         images['player'] = pygame.transform.scale(images['player'], (80, 80))
+        
+        images['heart'] = pygame.image.load(os.path.join(IMAGE_DIR, 'heart.webp'))
+        images['heart'] = pygame.transform.scale(images['heart'], (30, 30))
+        
+        images['empty_heart'] = pygame.image.load(os.path.join(IMAGE_DIR, 'empty_heart.webp'))
+        images['empty_heart'] = pygame.transform.scale(images['empty_heart'], (30, 30))
+        
+        # Добавляем изображение метеорита
+        images['meteor'] = pygame.image.load(os.path.join(IMAGE_DIR, 'meteor.webp'))
+        images['meteor'] = pygame.transform.scale(images['meteor'], (80, 80))
     except Exception as e:
         print(f"Ошибка загрузки изображений: {e}")
         pygame.quit()
@@ -40,12 +48,14 @@ def load_sounds():
         sounds['death'] = pygame.mixer.Sound(os.path.join(MUSIC_DIR, 'death.mp3'))
         sounds['enemy_death'] = pygame.mixer.Sound(os.path.join(MUSIC_DIR, 'enemy_death.mp3'))
         sounds['fast_wave'] = pygame.mixer.Sound(os.path.join(MUSIC_DIR, 'fast_wave.mp3'))
-        
+        sounds['heart'] = pygame.mixer.Sound(os.path.join(MUSIC_DIR, 'heart.mp3'))
+
         sounds['jump'].set_volume(0.5)
         sounds['powerup'].set_volume(0.7)
         sounds['death'].set_volume(0.7)
         sounds['enemy_death'].set_volume(0.5)
         sounds['fast_wave'].set_volume(0.7)
+        sounds['heart'].set_volume(0.5)
         
         pygame.mixer.music.load(os.path.join(MUSIC_DIR, 'Factory.ogg'))
         pygame.mixer.music.set_volume(0.5)
@@ -112,21 +122,32 @@ def run_game():
     # Инициализация игры
     high_score = load_high_score()
     player = Player(images['player'])
+    lives = 3
+    max_lives = 3
     score = 0
     paused = False
     goombas = []
+    heart_bonuses = []
+    meteors = []  # Список метеоритов
+    HEART_DROP_CHANCE = 0.2  # 20% шанс выпадения сердца
+    METEOR_SPAWN_CHANCE = 0.35  # 35% шанс появления метеорита во время волны
+    METEOR_SPAWN_INTERVAL = 800  # Интервал спавна метеоритов (мс)
+    MAX_METEORS = 8  # Максимальное количество метеоритов
+    MAX_LIVES = 3  # 30% шанс появления метеорита во время волны
     spawn_delay = INIT_DELAY
     last_spawn_time = pygame.time.get_ticks()
+    last_meteor_time = pygame.time.get_ticks()
 
     # Система волн
     fast_spawn_active = False
     fast_spawn_end_time = 0
-    fast_spawn_duration = 1000  # 1 секунда быстрого спавна
+    fast_spawn_duration = 5000  # 5 секунд волны
     kills_for_fast_wave = 20
     kill_count = 5
 
     wave_spawn_delay = 500
     max_wave_enemies = 2
+    
     # Запуск музыки
     pygame.mixer.music.play(-1)
 
@@ -147,9 +168,11 @@ def run_game():
                     
                     # Перезапускаем игру
                     player = Player(images['player'])
+                    lives = 3
                     score = 0
                     kill_count = 0
                     goombas = []
+                    heart_bonuses = []
                     spawn_delay = INIT_DELAY
                     last_spawn_time = pygame.time.get_ticks()
                     pygame.mixer.music.play(-1)
@@ -182,23 +205,33 @@ def run_game():
         # Проверяем, закончился ли период быстрого спавна
         if fast_spawn_active and pygame.time.get_ticks() > fast_spawn_end_time:
             fast_spawn_active = False
+            meteors = []  # Очищаем метеориты после волны
 
         # Логика спавна врагов
         now = pygame.time.get_ticks()
         elapsed = now - last_spawn_time
         
-        # Определяем интервал спавна в зависимости от режима
         current_spawn_delay = wave_spawn_delay if fast_spawn_active else spawn_delay
         
         if elapsed > current_spawn_delay:
             last_spawn_time = now
             goombas.append(Goomba(images['enemy'], images['enemy_dead']))
             
-            # В быстром режиме спавним дополнительных гумб с меньшей вероятностью
             if fast_spawn_active and random.random() > 0.8: 
-                extra_enemies = random.randint(0, max_wave_enemies)  # От 0 до max_wave_enemies
+                extra_enemies = random.randint(0, max_wave_enemies)
                 for _ in range(extra_enemies):
                     goombas.append(Goomba(images['enemy'], images['enemy_dead']))
+
+        # Спавн метеоритов во время волны
+        if (fast_spawn_active and 
+        now - last_meteor_time > METEOR_SPAWN_INTERVAL and 
+        len(meteors) < MAX_METEORS):
+            last_meteor_time = now
+            if random.random() < METEOR_SPAWN_CHANCE:
+                meteors.append(Meteor(images['meteor']))
+                # С шансом 20% спавним дополнительный метеорит
+                if random.random() < 0.2 and len(meteors) < MAX_METEORS - 1:
+                    meteors.append(Meteor(images['meteor']))
 
         # Отрисовка
         screen.blit(images['background'], (0, 0))
@@ -210,22 +243,6 @@ def run_game():
         high_score_text = fonts['medium'].render(f'RECORD: {high_score}', True, (255, 215, 0))
         high_score_rect = high_score_text.get_rect()
         high_score_rect.topleft = (10, 10)
-
-        # Логика спавна врагов
-        now = pygame.time.get_ticks()
-        elapsed = now - last_spawn_time
-        
-        # Определяем интервал спавна в зависимости от режима
-        current_spawn_delay = 300 if fast_spawn_active else spawn_delay
-        
-        if elapsed > current_spawn_delay:
-            last_spawn_time = now
-            goombas.append(Goomba(images['enemy'], images['enemy_dead']))
-            
-            # В быстром режиме спавним дополнительных гумб
-            if fast_spawn_active and random.random() > 0.5:
-                for _ in range(random.randint(1, 2)):
-                    goombas.append(Goomba(images['enemy'], images['enemy_dead']))
 
         if player.is_out:
             score_rect.midbottom = (W//2, H//2)
@@ -245,6 +262,34 @@ def run_game():
                 player.update()
                 player.update_moon_jump()
                 
+                # Обновление бонусных сердец
+                for heart in list(heart_bonuses):
+                    heart.update()
+                    if heart.is_out:
+                        heart_bonuses.remove(heart)
+                    elif player.rect.colliderect(heart.rect) and not player.is_dead:
+                        if lives < max_lives:
+                            lives += 1
+                        heart_bonuses.remove(heart)
+                        sounds['heart'].play()
+                
+                # Обновление метеоритов
+                for meteor in list(meteors):
+                    meteor.update()
+                    if meteor.rect.top > H:  # Удаляем если улетел за экран
+                        meteors.remove(meteor)
+                    elif not player.is_dead and player.rect.colliderect(meteor.rect):
+                        if not player.invincible:
+                            lives -= 1
+                            if lives <= 0:
+                                player.kill()
+                                sounds['death'].play()
+                            else:
+                                player.respawn()
+                                player.invincible = True
+                                player.invincible_timer = pygame.time.get_ticks() + 2000
+                        meteors.remove(meteor)
+                
                 for goomba in list(goombas):
                     if goomba.is_out:
                         goombas.remove(goomba)
@@ -260,15 +305,46 @@ def run_game():
                                     spawn_delay = INIT_DELAY / (DECREASE_BASE**score)
                                     if score > high_score:
                                         high_score = score
-                                if player.jump():
-                                    sounds['jump'].play()
+                                    
+                                    # С шансом 20% создаем бонусное сердце
+                                    if random.random() < HEART_DROP_CHANCE:
+                                        heart_bonuses.append(HeartBonus(
+                                            images['heart'], 
+                                            goomba.rect.centerx,
+                                            goomba.rect.centery
+                                        ))
+                                    
+                                    if player.jump():
+                                        sounds['jump'].play()
                             else:
-                                player.kill(images['player'])
-                                sounds['death'].play()
+                                if not player.invincible:
+                                    lives -= 1
+                                    if lives <= 0:
+                                        player.kill()
+                                        sounds['death'].play()
+                                    else:
+                                        player.respawn()
+                                        player.invincible = True
+                                        player.invincible_timer = pygame.time.get_ticks() + 2000
             
             player.draw(screen)
             for goomba in goombas:
                 goomba.draw(screen)
+
+            # Отрисовка метеоритов
+            for meteor in meteors:
+                meteor.draw(screen)
+            
+            # Отрисовка бонусных сердец
+            for heart in heart_bonuses:
+                heart.draw(screen)
+            
+            # Отрисовка жизней (сердечек)
+            for i in range(max_lives):
+                if i < lives:
+                    screen.blit(images['heart'], (10 + i * 35, 50))
+                else:
+                    screen.blit(images['empty_heart'], (10 + i * 35, 50))
             
             if paused:
                 screen.blit(pause_text, pause_rect)
@@ -285,23 +361,16 @@ def run_game():
             
             # Отрисовываем индикатор волны
             if fast_spawn_active:
-                
                 wave_font = fonts['large']
+                wave_text = wave_font.render("WAVE!", True, (255, 0, 0))
+                wave_rect = wave_text.get_rect(center=(W//2, 100))
                 
-                # Создаем текст с обводкой
-                wave_text = wave_font.render("WAVE!", True, (255, 0, 0))  # Ярко-красный
-                wave_rect = wave_text.get_rect(center=(W//2, 100))  # Фиксированная позиция сверху
-                
-                # Черная обводка
                 outline_surf = wave_font.render("WAVE!", True, (0, 0, 0))
                 for dx in [-3, -2, -1, 1, 2, 3]:
                     for dy in [-3, -2, -1, 1, 2, 3]:
                         screen.blit(outline_surf, (wave_rect.x + dx, wave_rect.y + dy))
                 
-                # Основной текст
                 screen.blit(wave_text, wave_rect)
-                
-                # Дополнительный эффект - полоса под текстом
                 pygame.draw.rect(screen, (255, 0, 0), (wave_rect.x - 10, wave_rect.bottom, wave_rect.width + 20, 5))
                         
             screen.blit(high_score_text, high_score_rect)
