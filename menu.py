@@ -4,9 +4,16 @@ import os
 class Menu:
     def __init__(self):
         pygame.init()
+        pygame.mixer.init()  # Инициализация звуковой системы
+        
         self.WIDTH, self.HEIGHT = 800, 600
         self.screen = pygame.display.set_mode((self.WIDTH, self.HEIGHT))
         pygame.display.set_caption("Приключение Лунного Кота")
+        
+        # Загрузка и настройка музыки
+        self.music_volume = 0.5  # Громкость музыки (от 0.0 до 1.0)
+        self.current_track = None
+        self.load_music()
         
         # Загрузка фонового изображения
         self.background = self.load_background()
@@ -22,9 +29,51 @@ class Menu:
         # Для плавного перехода
         self.transition_surface = pygame.Surface((self.WIDTH, self.HEIGHT), pygame.SRCALPHA)
         self.transition_speed = 15
+        
+        # Запуск фоновой музыки
+        self.play_music("menu")
+    
+    def load_music(self):
+        #Загружает и настраивает музыкальные треки
+        self.music_tracks = {
+            "menu": os.path.join('music', 'menu_music.mp3'),
+            "gameplay": os.path.join('music', 'Factory.ogg')
+        }
+        
+        # Проверяем существование файлов
+        for name, path in self.music_tracks.items():
+            if not os.path.exists(path):
+                print(f"Предупреждение: музыкальный файл не найден - {path}")
+                self.music_tracks[name] = None
+        
+        # Настройка микшера
+        pygame.mixer.music.set_volume(self.music_volume)
+    
+    def play_music(self, track_name, loops=-1):
+        # Воспроизводит фоновую музыку
+        if track_name not in self.music_tracks or not self.music_tracks[track_name]:
+            return
+            
+        if self.current_track != track_name:
+            try:
+                pygame.mixer.music.load(self.music_tracks[track_name])
+                pygame.mixer.music.play(loops=loops)
+                self.current_track = track_name
+            except Exception as e:
+                print(f"Ошибка загрузки музыки: {e}")
+    
+    def stop_music(self, fadeout=1000):
+        #плавно останавливает музыку
+        pygame.mixer.music.fadeout(fadeout)
+        self.current_track = None
+    
+    def set_music_volume(self, volume):
+        #устанавливает громкость музыки
+        self.music_volume = max(0.0, min(1.0, volume))
+        pygame.mixer.music.set_volume(self.music_volume)
     
     def load_background(self):
-        """Загружает и подгоняет фоновое изображение"""
+        #загружает и подгоняет фоновое изображение
         try:
             bg_path = os.path.join('images', 'menu_bg.jpg')
             background = pygame.image.load(bg_path).convert()
@@ -58,7 +107,7 @@ class Menu:
             return background
     
     def init_elements(self):
-        """Инициализирует элементы меню"""
+        # Инициализирует элементы меню
         # Шрифты
         try:
             font_path = os.path.join('images', 'mario_font.ttf')
@@ -75,9 +124,11 @@ class Menu:
         # Кнопки
         self.play_button = self.create_button(self.WIDTH//2 - 150, self.HEIGHT//2, 300, 50, "Играть")
         self.exit_button = self.create_button(self.WIDTH//2 - 150, self.HEIGHT//2 + 100, 300, 50, "Выход")
+        self.sound_button = self.create_button(self.WIDTH - 240, 40, 200, 50, 
+                                             "Звук: Вкл" if self.music_volume > 0 else "Звук: Выкл")
     
     def create_button(self, x, y, width, height, text):
-        """Создает кнопку меню с анимацией"""
+        # Создает кнопку меню с анимацией
         return {
             'rect': pygame.Rect(x, y, width, height),
             'text': text,
@@ -87,7 +138,7 @@ class Menu:
         }
     
     def draw_button(self, button):
-        """Отрисовывает анимированную кнопку"""
+        #отрисовывает анимированную кнопку
         # Анимация масштаба
         button['scale'] += (button['target_scale'] - button['scale']) * 0.1
         
@@ -113,15 +164,26 @@ class Menu:
         self.screen.blit(btn_surface, btn_rect)
     
     def run_transition(self, direction=1):
-        """Анимация перехода (1 - вперед, -1 - назад)"""
+        #Анимация перехода (1 - вперед, -1 - назад)
         for alpha in range(0, 255, self.transition_speed * direction)[::direction]:
             self.transition_surface.fill((255, 255, 255, abs(alpha)))
             self.screen.blit(self.transition_surface, (0, 0))
             pygame.display.flip()
             pygame.time.delay(30)
     
+    def toggle_sound(self):
+        #Переключает звук и обновляет текст кнопки
+        if self.music_volume > 0:
+            self.set_music_volume(0.0)
+            self.sound_button['text'] = "Звук: Выкл"
+        else:
+            self.set_music_volume(0.5)
+            self.sound_button['text'] = "Звук: Вкл"
+            if not self.current_track:
+                self.play_music("menu")
+    
     def run(self):
-        """Главный цикл меню"""
+        # Главный цикл меню
         running = True
         clock = pygame.time.Clock()
         
@@ -142,7 +204,8 @@ class Menu:
                                               self.HEIGHT//4 + 40))
             
             # Обновление кнопок
-            for button in [self.play_button, self.exit_button]:
+            buttons = [self.play_button, self.exit_button, self.sound_button]
+            for button in buttons:
                 was_hovered = button['hovered']
                 button['hovered'] = button['rect'].collidepoint(mouse_pos)
                 
@@ -158,16 +221,22 @@ class Menu:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
+                    self.stop_music()
                     return 'exit'
                 
                 if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                     if self.play_button['rect'].collidepoint(mouse_pos):
                         self.run_transition(1)  # Анимация перехода
+                        self.stop_music()
                         return 'play'
                     elif self.exit_button['rect'].collidepoint(mouse_pos):
                         self.run_transition(1)
+                        self.stop_music()
                         return 'exit'
+                    elif self.sound_button['rect'].collidepoint(mouse_pos):
+                        self.toggle_sound()
             
             pygame.display.flip()
         
+        self.stop_music()
         return 'exit'

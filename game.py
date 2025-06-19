@@ -3,78 +3,70 @@ import os
 import random
 from constants import W, H, FPS, INIT_DELAY, DECREASE_BASE, GROUND_H
 from utils import load_high_score, save_high_score
-from entities import Player, Goomba, HeartBonus, Meteor  # Добавляем Meteor в импорт
+from entities import Player, Goomba, HeartBonus, Meteor
 
 def load_images():
     images = {}
     IMAGE_DIR = 'images'
-    try:
-        images['background'] = pygame.image.load(os.path.join(IMAGE_DIR, 'background.jpg'))
-        images['background'] = pygame.transform.scale(images['background'], (W, H))
+    
+    images['background'] = pygame.image.load(os.path.join(IMAGE_DIR, 'background.jpg'))
+    images['background'] = pygame.transform.scale(images['background'], (W, H))
 
-        images['ground'] = pygame.image.load(os.path.join(IMAGE_DIR, 'ground.png'))
-        images['ground'] = pygame.transform.scale(images['ground'], (1000, 110))
+    images['ground'] = pygame.image.load(os.path.join(IMAGE_DIR, 'ground.png'))
+    images['ground'] = pygame.transform.scale(images['ground'], (1000, 110))
 
-        images['enemy'] = pygame.image.load(os.path.join(IMAGE_DIR, 'goomba.png'))
-        images['enemy'] = pygame.transform.scale(images['enemy'], (80, 80))
+    images['enemy'] = pygame.image.load(os.path.join(IMAGE_DIR, 'goomba.png'))
+    images['enemy'] = pygame.transform.scale(images['enemy'], (80, 80))
         
-        images['enemy_dead'] = pygame.image.load(os.path.join(IMAGE_DIR, 'goomba_dead.png'))
-        images['enemy_dead'] = pygame.transform.scale(images['enemy_dead'], (80, 80))
+    images['enemy_dead'] = pygame.image.load(os.path.join(IMAGE_DIR, 'goomba_dead.png'))
+    images['enemy_dead'] = pygame.transform.scale(images['enemy_dead'], (80, 80))
 
-        images['player'] = pygame.image.load(os.path.join(IMAGE_DIR, 'cat.png'))
-        images['player'] = pygame.transform.scale(images['player'], (80, 80))
+    images['player'] = pygame.image.load(os.path.join(IMAGE_DIR, 'cat.png'))
+    images['player'] = pygame.transform.scale(images['player'], (80, 80))
         
-        images['heart'] = pygame.image.load(os.path.join(IMAGE_DIR, 'heart.webp'))
-        images['heart'] = pygame.transform.scale(images['heart'], (30, 30))
+    images['heart'] = pygame.image.load(os.path.join(IMAGE_DIR, 'heart.png'))
+    images['heart'] = pygame.transform.scale(images['heart'], (30, 30))
         
-        images['empty_heart'] = pygame.image.load(os.path.join(IMAGE_DIR, 'empty_heart.webp'))
-        images['empty_heart'] = pygame.transform.scale(images['empty_heart'], (30, 30))
+    images['empty_heart'] = pygame.image.load(os.path.join(IMAGE_DIR, 'empty_heart.webp'))
+    images['empty_heart'] = pygame.transform.scale(images['empty_heart'], (30, 30))
         
-        # Добавляем изображение метеорита
-        images['meteor'] = pygame.image.load(os.path.join(IMAGE_DIR, 'meteor.webp'))
-        images['meteor'] = pygame.transform.scale(images['meteor'], (80, 80))
-    except Exception as e:
-        print(f"Ошибка загрузки изображений: {e}")
-        pygame.quit()
-        exit()
+    images['meteor'] = pygame.image.load(os.path.join(IMAGE_DIR, 'meteor.webp'))
+    images['meteor'] = pygame.transform.scale(images['meteor'], (80, 80))
+    
     return images
 
 def load_sounds():
     sounds = {}
     MUSIC_DIR = 'music'
-    try:
-        sounds['jump'] = pygame.mixer.Sound(os.path.join(MUSIC_DIR, 'jump.mp3'))
-        sounds['powerup'] = pygame.mixer.Sound(os.path.join(MUSIC_DIR, 'powerup.mp3'))
-        sounds['death'] = pygame.mixer.Sound(os.path.join(MUSIC_DIR, 'death.mp3'))
-        sounds['enemy_death'] = pygame.mixer.Sound(os.path.join(MUSIC_DIR, 'enemy_death.mp3'))
-        sounds['fast_wave'] = pygame.mixer.Sound(os.path.join(MUSIC_DIR, 'fast_wave.mp3'))
-        sounds['heart'] = pygame.mixer.Sound(os.path.join(MUSIC_DIR, 'heart.mp3'))
+    
+    sounds['jump'] = pygame.mixer.Sound(os.path.join(MUSIC_DIR, 'jump.mp3'))
+    sounds['powerup'] = pygame.mixer.Sound(os.path.join(MUSIC_DIR, 'powerup.mp3'))
+    sounds['death'] = pygame.mixer.Sound(os.path.join(MUSIC_DIR, 'death.mp3'))
+    sounds['enemy_death'] = pygame.mixer.Sound(os.path.join(MUSIC_DIR, 'enemy_death.mp3'))
+    sounds['fast_wave'] = pygame.mixer.Sound(os.path.join(MUSIC_DIR, 'fast_wave.mp3'))
+    sounds['heart'] = pygame.mixer.Sound(os.path.join(MUSIC_DIR, 'heart.mp3'))
 
-        sounds['jump'].set_volume(0.5)
-        sounds['powerup'].set_volume(0.7)
-        sounds['death'].set_volume(0.7)
-        sounds['enemy_death'].set_volume(0.5)
-        sounds['fast_wave'].set_volume(0.7)
-        sounds['heart'].set_volume(0.5)
+    sounds['jump'].set_volume(0.5)
+    sounds['powerup'].set_volume(0.7)
+    sounds['death'].set_volume(0.7)
+    sounds['enemy_death'].set_volume(0.5)
+    sounds['fast_wave'].set_volume(0.7)
+    sounds['heart'].set_volume(0.5)
         
-        pygame.mixer.music.load(os.path.join(MUSIC_DIR, 'Factory.ogg'))
-        pygame.mixer.music.set_volume(0.5)
-    except Exception as e:
-        print(f"Ошибка загрузки звуков: {e}")
+    pygame.mixer.music.load(os.path.join(MUSIC_DIR, 'Factory.ogg'))
+    pygame.mixer.music.set_volume(0.5)
+
     return sounds
 
 def load_fonts():
     fonts = {}
     IMAGE_DIR = 'images'
-    try:
-        font_path = os.path.join(IMAGE_DIR, 'mario_font.ttf')
-        fonts['large'] = pygame.font.Font(font_path, 48)
-        fonts['small'] = pygame.font.Font(font_path, 24)
-        fonts['medium'] = pygame.font.Font(font_path, 36)
-    except:
-        fonts['large'] = pygame.font.SysFont('arial', 48)
-        fonts['small'] = pygame.font.SysFont('arial', 24)
-        fonts['medium'] = pygame.font.SysFont('arial', 36)
+    
+    font_path = os.path.join(IMAGE_DIR, 'mario_font.ttf')
+    fonts['large'] = pygame.font.Font(font_path, 48)
+    fonts['medium'] = pygame.font.Font(font_path, 36)
+    fonts['small'] = pygame.font.Font(font_path, 24)
+    
     return fonts
 
 def run_game():
@@ -167,16 +159,16 @@ def run_game():
                         save_high_score(high_score)
                     
                     # Перезапускаем игру
-                    player = Player(images['player'])
-                    lives = 3
-                    score = 0
-                    kill_count = 0
-                    goombas = []
-                    heart_bonuses = []
-                    spawn_delay = INIT_DELAY
-                    last_spawn_time = pygame.time.get_ticks()
-                    pygame.mixer.music.play(-1)
-                    continue
+                    player = Player(images['player'])  # Создаем нового игрока
+                    lives = 3                         # Восстанавливаем жизни
+                    score = 0                         # Сбрасываем счет
+                    kill_count = 0                    # Обнуляем счетчик убийств
+                    goombas = []                      # Очищаем список врагов
+                    heart_bonuses = []                # Очищаем бонусы
+                    spawn_delay = INIT_DELAY          # Сбрасываем задержку спавна
+                    last_spawn_time = pygame.time.get_ticks()  # Обновляем таймер
+                    pygame.mixer.music.play(-1)       # Перезапускаем музыку
+                    continue    # Пропускаем остальную обработку
                 
                 # Остальная обработка ввода
                 if event.key == pygame.K_w:
